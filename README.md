@@ -1,1 +1,1 @@
-# ml-strategy-lab
+# With usage instructions & screenshots
