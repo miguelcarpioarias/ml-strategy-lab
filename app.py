@@ -75,6 +75,18 @@ with tab2:
         ml_data["Position"] = ml_data["Prediction"].shift()  # simulate acting on yesterday's prediction
         ml_data["Returns"] = ml_data["Close"].pct_change()
         ml_data["Strategy_Returns"] = ml_data["Returns"] * ml_data["Position"]
+        # Calculate cumulative returns
+        ml_data["Cumulative_Strategy"] = (1 + ml_data["Strategy_Returns"]).cumprod()
+        ml_data["Cumulative_BuyHold"] = (1 + ml_data["Returns"]).cumprod()
+
+        st.subheader("📉 Cumulative Return Comparison")
+        fig3, ax3 = plt.subplots(figsize=(12, 6))
+        ax3.plot(ml_data.index, ml_data["Cumulative_Strategy"], label="ML Strategy")
+        ax3.plot(ml_data.index, ml_data["Cumulative_BuyHold"], label="Buy & Hold", linestyle="--")
+        ax3.legend()
+        ax3.set_title("Cumulative Returns: ML Strategy vs Buy & Hold")
+        st.pyplot(fig3)
+
 
         # Plot results
         st.subheader(f"{ticker} Price & ML Buy Predictions")
@@ -95,6 +107,22 @@ with tab2:
 
         st.write(f"**Total Return:** {round(total_return * 100, 2)}%")
         st.write(f"**Predicted Buy Days:** {int(trade_count)}")
+        st.write(f"**Cumulative Return (ML):** {round((ml_data['Cumulative_Strategy'].iloc[-1] - 1) * 100, 2)}%")
+        st.write(f"**Cumulative Return (Buy & Hold):** {round((ml_data['Cumulative_BuyHold'].iloc[-1] - 1) * 100, 2)}%")
+
 
     else:
         st.warning("No data found. Please check your inputs.")
+
+# Execuation Interactive Brokers
+from execution.ibkr_interface import connect_ibkr, place_order
+
+st.subheader("Paper Trade via IBKR")
+qty = st.number_input("Quantity", min_value=1, value=10)
+trigger_trade = st.button("Place Buy Order (ML Confirmed)")
+
+if trigger_trade:
+    ib = connect_ibkr()
+    trade = place_order(ib, ticker, qty=qty, action="BUY")
+    st.success(f"Order Placed: {trade}")
+
